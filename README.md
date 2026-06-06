@@ -254,8 +254,3 @@ El reset exige una bandera explicita:
 python scripts\reset_db.py --yes-i-know
 ```
 
-## Privacidad y versionado
-
-Este repositorio esta preparado para publicarse sin subir documentos privados: `data/raw/*` esta ignorado salvo `data/raw/.gitkeep` y `data/raw/example.md`. Mantén tus documentos reales fuera de git.
-
-No registres secretos en `.env`, logs o documentos versionados.
