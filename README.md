@@ -286,13 +286,3 @@ python scripts\reset_db.py --yes-i-know
 
 This removes RAG table data. It does not delete files from `data/raw`.
 
-## Privacy and Version Control
-
-The repository is prepared for public use without committing private documents:
-
-- `data/raw/*` is ignored except `data/raw/.gitkeep` and `data/raw/example.md`;
-- `data/processed/` is ignored;
-- `models/` is ignored;
-- `.env` is ignored.
-
-Do not commit secrets, tokens, private notes, internal documents, local model weights or sensitive logs.
