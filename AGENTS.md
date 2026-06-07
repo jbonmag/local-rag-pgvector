@@ -10,7 +10,7 @@ This project implements a local RAG system with PostgreSQL, pgvector, hybrid ret
 - Keep code simple and maintainable.
 - Do not mix tenants or permission scopes.
 - Do not log secrets or complete sensitive content.
-- Do not use OpenAI as the primary backend.
+- Do not depend on a hosted inference API as the primary backend.
 - Do not use LM Studio.
 - Do not use Ollama.
 - Do not commit or upload local models to the repository.

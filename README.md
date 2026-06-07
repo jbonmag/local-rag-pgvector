@@ -1,32 +1,53 @@
 # Local RAG with PostgreSQL and pgvector
 
-Proyecto RAG local para Windows 11, pensado para funcionar offline despues de descargar los modelos. Usa FastAPI, PostgreSQL con pgvector, ingesta desde disco, busqueda hibrida, embeddings locales, generacion local opcional y respuestas con fuentes.
+Local-first Retrieval-Augmented Generation system for Windows 11. It uses FastAPI, PostgreSQL, pgvector, local document ingestion, hybrid retrieval, local embeddings, optional local generation and source-backed answers.
 
-No usa Google Drive, OpenAI como backend principal, LM Studio ni Ollama. El modo por defecto es mock para que la API, la ingesta, la base de datos y los tests puedan probarse sin modelos pesados.
+The default mode is fully mock-based, so the API, ingestion pipeline, database schema and tests can be validated without downloading large models. After models are downloaded, the project can run offline.
 
-Para una explicacion paso a paso y muy detallada, lee [MANUAL_USO.md](MANUAL_USO.md).
+For a detailed step-by-step guide, read [USAGE_GUIDE.md](USAGE_GUIDE.md).
 
-## Arquitectura
+## Why this project
 
-- `data/raw`: documentos fuente locales. Soporta TXT, Markdown, HTML y PDF.
-- `data/processed`: artefactos procesados locales. Esta carpeta esta ignorada por git.
-- `models`: modelos descargados desde Hugging Face. Esta carpeta esta ignorada por git.
-- PostgreSQL almacena documentos, versiones, chunks, embeddings, metadata, logs de retrieval y feedback.
-- `pgvector` ejecuta busqueda vectorial.
-- PostgreSQL full-text search ejecuta busqueda keyword con `tsvector`.
-- Reciprocal Rank Fusion combina resultados vectoriales y keyword.
-- FastAPI expone `/health`, `/ingest/local` y `/query`.
+This repository is designed as a practical RAG reference implementation:
 
-## Requisitos
+- local source files instead of cloud document stores;
+- PostgreSQL as the system of record;
+- pgvector for semantic retrieval;
+- PostgreSQL full-text search for keyword retrieval;
+- Reciprocal Rank Fusion to combine both result sets;
+- citations and source metadata in every answer;
+- deterministic mock backends for reliable tests;
+- optional local Hugging Face embeddings and local LLM generation.
+
+## Architecture
+
+```text
+Local files -> ingestion -> chunks -> embeddings -> PostgreSQL + pgvector
+                                             |
+Question -> hybrid retrieval -> context -> answer with sources
+```
+
+Core components:
+
+- `data/raw`: local source documents. TXT, Markdown, HTML and PDF are supported.
+- `data/processed`: local processed artifacts. Ignored by Git.
+- `models`: downloaded local models. Ignored by Git.
+- PostgreSQL stores documents, versions, chunks, embeddings, metadata, retrieval logs and feedback.
+- `pgvector` runs vector search.
+- PostgreSQL full-text search runs keyword search with `tsvector`.
+- Reciprocal Rank Fusion combines vector and keyword rankings.
+- FastAPI exposes `/health`, `/ingest/local` and `/query`.
+
+## Requirements
 
 - Windows 11
 - Docker Desktop
 - Python 3.11+
 - PowerShell
 
-## Arranque rapido: modo A, mock completo
+## Quick Start: Mode A, Full Mock
 
-Este modo no requiere modelos reales.
+This mode does not require real models.
 
 ```powershell
 docker compose up -d
@@ -35,12 +56,12 @@ python -m venv .venv
 pip install -e ".[dev]"
 alembic upgrade head
 python scripts\ingest_local.py
-python scripts\query.py "¿Que dicen mis documentos sobre X?"
+python scripts\query.py "What do my documents say about X?"
 pytest
 python -m app.evals.run_evals
 ```
 
-Para arrancar la API:
+Start the API:
 
 ```powershell
 uvicorn app.main:app --reload
@@ -52,15 +73,21 @@ Endpoints:
 - `POST /ingest/local`
 - `POST /query`
 
-## Configuracion
+Interactive API docs:
 
-Copia `.env.example` a `.env` y ajusta valores si hace falta.
+```text
+http://127.0.0.1:8000/docs
+```
+
+## Configuration
+
+Copy `.env.example` to `.env` and adjust values if needed.
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-Valores principales:
+Main settings:
 
 ```env
 DATABASE_URL=postgresql+psycopg://rag:rag@localhost:5432/ragdb
@@ -72,52 +99,53 @@ LOCAL_LLM_BACKEND=mock
 ALLOW_MODEL_DOWNLOAD=false
 ```
 
-## PostgreSQL y migraciones
+## PostgreSQL and Migrations
 
-PostgreSQL corre con Docker Compose usando la imagen `pgvector/pgvector:pg16`.
+PostgreSQL runs through Docker Compose with the `pgvector/pgvector:pg16` image.
 
 ```powershell
 docker compose up -d
 alembic upgrade head
 ```
 
-La migracion inicial habilita `CREATE EXTENSION vector`, crea la columna vectorial con la dimension de `EMBEDDING_DIMENSION`, crea un indice HNSW para embeddings y un indice GIN para full-text search.
+The initial migration enables `CREATE EXTENSION vector`, creates the vector column with the configured `EMBEDDING_DIMENSION`, creates an HNSW index for embeddings and creates a GIN index for full-text search.
 
-Importante: cambiar `EMBEDDING_DIMENSION` requiere recrear o migrar embeddings y la columna vectorial. El valor por defecto es `384`, adecuado para `intfloat/multilingual-e5-small`.
+Changing `EMBEDDING_DIMENSION` requires recreating or migrating existing embeddings and the vector column. The default value is `384`, which matches `intfloat/multilingual-e5-small`.
 
-## Ingesta local
+## Local Ingestion
 
-Coloca documentos en `data/raw`:
+Place documents in `data/raw`:
 
 ```text
 data/raw/manual.md
-data/raw/notas.txt
-data/raw/pagina.html
-data/raw/informe.pdf
+data/raw/notes.txt
+data/raw/page.html
+data/raw/report.pdf
 ```
 
-Ejecuta:
+Run:
 
 ```powershell
 python scripts\ingest_local.py
 ```
 
-La ingesta:
+The ingestion pipeline:
 
-- calcula hash SHA-256 del contenido extraido;
-- crea o reutiliza `documents`;
-- crea `document_versions` solo si cambia el contenido;
-- hace chunking determinista;
-- genera embeddings en batch;
-- evita duplicar versiones sin cambios.
+- extracts text from supported files;
+- calculates a SHA-256 hash from the extracted content;
+- creates or reuses `documents`;
+- creates `document_versions` only when content changes;
+- performs deterministic chunking;
+- generates embeddings in batches;
+- avoids duplicate versions when files are unchanged.
 
-## Consulta
+## Querying
 
 ```powershell
-python scripts\query.py "¿Que dicen mis documentos sobre X?"
+python scripts\query.py "What do my documents say about X?"
 ```
 
-Contrato de respuesta:
+Response contract:
 
 ```json
 {
@@ -136,35 +164,35 @@ Contrato de respuesta:
 }
 ```
 
-Si no hay contexto suficiente, `sufficient_context` sera `false` y `sources` puede estar vacio.
+If there is not enough context, `sufficient_context` is `false` and `sources` can be empty.
 
-## Busqueda hibrida
+## Hybrid Retrieval
 
-`app/retrieval/hybrid.py` ejecuta:
+`app/retrieval/hybrid.py` runs:
 
-- vector search con pgvector;
-- keyword search con PostgreSQL full-text search;
-- fusion con Reciprocal Rank Fusion;
-- logging en `retrieval_logs`.
-- umbral basico `RAG_MIN_VECTOR_SCORE` para no tratar recuperaciones vectoriales debiles como contexto suficiente. Los matches keyword siguen contando como contexto suficiente.
+- vector search with pgvector;
+- keyword search with PostgreSQL full-text search;
+- Reciprocal Rank Fusion;
+- retrieval logging in `retrieval_logs`;
+- a minimum vector score threshold through `RAG_MIN_VECTOR_SCORE`.
 
-No se debe reemplazar esto por vector-only retrieval salvo peticion explicita.
+Keyword matches can still count as sufficient context. This is intentional: the project should not be reduced to vector-only retrieval unless that design change is made explicitly and tested.
 
-## Modo B: embeddings locales + generacion mock
+## Mode B: Local Embeddings + Mock Generation
 
-Instala dependencias opcionales:
+Install optional dependencies:
 
 ```powershell
 pip install -e ".[local-llm]"
 ```
 
-Descarga embeddings:
+Download embeddings:
 
 ```powershell
 python scripts\download_model.py --repo-id intfloat/multilingual-e5-small --target ./models/embeddings/multilingual-e5-small
 ```
 
-Configura:
+Configure:
 
 ```env
 EMBEDDINGS_BACKEND=sentence_transformers
@@ -175,19 +203,19 @@ LOCAL_LLM_BACKEND=mock
 ALLOW_MODEL_DOWNLOAD=false
 ```
 
-Con `ALLOW_MODEL_DOWNLOAD=false`, la inferencia no intenta descargar nada. Si la carpeta no existe, el error indica como corregirlo.
+With `ALLOW_MODEL_DOWNLOAD=false`, inference never attempts to download models at runtime. If the local folder does not exist, the error message explains what to fix.
 
-## Modo C: embeddings locales + LLM local
+## Mode C: Local Embeddings + Local LLM
 
-### llama-cpp-python con GGUF
+### llama-cpp-python with GGUF
 
-Descarga un GGUF concreto:
+Download a specific GGUF file:
 
 ```powershell
-python scripts\download_model.py --repo-id REPO_ID_DEL_MODELO --filename NOMBRE_DEL_MODELO.gguf --target ./models/llm/model.gguf
+python scripts\download_model.py --repo-id MODEL_REPO_ID --filename MODEL_NAME.gguf --target ./models/llm/model.gguf
 ```
 
-Configura:
+Configure:
 
 ```env
 LOCAL_LLM_BACKEND=llama_cpp
@@ -198,59 +226,73 @@ LOCAL_LLM_TEMPERATURE=0.2
 LOCAL_LLM_N_GPU_LAYERS=0
 ```
 
-En Windows, `llama-cpp-python` puede requerir compiladores, CMake o wheels compatibles. No hace falta GPU; `LOCAL_LLM_N_GPU_LAYERS=0` usa CPU.
+On Windows, `llama-cpp-python` can require compatible wheels, CMake or build tools. GPU is not required; `LOCAL_LLM_N_GPU_LAYERS=0` runs on CPU.
 
-### transformers con carpeta local
+### transformers with a Local Model Folder
 
-Descarga un repositorio completo:
+Download a full model repository:
 
 ```powershell
-python scripts\download_model.py --repo-id REPO_ID_DEL_MODELO --target ./models/llm/NOMBRE
+python scripts\download_model.py --repo-id MODEL_REPO_ID --target ./models/llm/MODEL_NAME
 ```
 
-Configura:
+Configure:
 
 ```env
 LOCAL_LLM_BACKEND=transformers
-LOCAL_LLM_MODEL_PATH=./models/llm/NOMBRE
+LOCAL_LLM_MODEL_PATH=./models/llm/MODEL_NAME
 LOCAL_LLM_DEVICE=auto
 LOCAL_LLM_DTYPE=auto
 ```
 
-En Windows, `torch`, CUDA y `accelerate` pueden requerir instalacion especifica segun CPU/GPU. El proyecto no exige GPU.
+On Windows, `torch`, CUDA and `accelerate` can require environment-specific installation. The project does not require a GPU, but large models can be slow on CPU.
 
-## Descarga de modelos
+## Model Downloads
 
-El script usa `huggingface_hub`, no scraping, y respeta `HF_TOKEN` si esta definido.
+The download script uses `huggingface_hub` and respects `HF_TOKEN` when it is defined.
 
-Repositorio completo:
+Full repository:
 
 ```powershell
 python scripts\download_model.py --repo-id intfloat/multilingual-e5-small --target ./models/embeddings/multilingual-e5-small
 ```
 
-Archivo GGUF:
+Single GGUF file:
 
 ```powershell
-python scripts\download_model.py --repo-id REPO_ID_DEL_MODELO --filename NOMBRE_DEL_MODELO.gguf --target ./models/llm/model.gguf
+python scripts\download_model.py --repo-id MODEL_REPO_ID --filename MODEL_NAME.gguf --target ./models/llm/model.gguf
 ```
 
-`models/` esta ignorado por git.
+`models/` is ignored by Git.
 
-## Tests y evals
+## Tests and Evals
 
 ```powershell
 pytest
 python -m app.evals.run_evals
 ```
 
-Los tests unitarios cubren hashing, chunking, RRF, embeddings mock, seleccion de backend local y contrato de respuesta. Las evals basicas usan `app/evals/golden.jsonl`; requieren base de datos migrada y contenido ingerido para los positivos.
+The test suite covers hashing, chunking, RRF, mock embeddings, local backend selection, keyword query construction, context sufficiency and the answer contract.
 
-## Reset de datos
+Basic evals use `app/evals/golden.jsonl`. Positive cases require the database to be migrated and local content to be ingested.
 
-El reset exige una bandera explicita:
+## Data Reset
+
+Resetting data requires an explicit flag:
 
 ```powershell
 python scripts\reset_db.py --yes-i-know
 ```
 
+This removes RAG table data. It does not delete files from `data/raw`.
+
+## Privacy and Version Control
+
+The repository is prepared for public use without committing private documents:
+
+- `data/raw/*` is ignored except `data/raw/.gitkeep` and `data/raw/example.md`;
+- `data/processed/` is ignored;
+- `models/` is ignored;
+- `.env` is ignored.
+
+Do not commit secrets, tokens, private notes, internal documents, local model weights or sensitive logs.

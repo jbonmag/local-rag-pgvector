@@ -1,7 +1,7 @@
-# Documento de ejemplo
+# Example Document
 
-Este documento ficticio describe politicas internas de ejemplo para validar el RAG local.
+This fictional document describes internal policy examples for validating the local RAG system.
 
-Las politicas internas indican que los documentos deben conservar fuentes, trazabilidad y citas cuando se responden preguntas.
+Internal policies state that documents should preserve sources, traceability and citations when answering questions.
 
-El tema principal del documento es demostrar una ingesta local con busqueda hibrida, versionado por hash y respuestas con fuentes.
+The main purpose of this document is to demonstrate local ingestion, hybrid retrieval, hash-based versioning and source-backed answers.

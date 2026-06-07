@@ -3,14 +3,14 @@ from app.schemas import QueryResponse, Source
 
 def test_answer_contract_requires_sources_field() -> None:
     response = QueryResponse(
-        answer="Respuesta",
+        answer="Answer",
         sources=[
             Source(
                 document_id="doc",
                 chunk_id="chunk",
-                title="Titulo",
+                title="Title",
                 source_uri="sample.txt",
-                snippet="texto",
+                snippet="text",
             )
         ],
         retrieval_log_id="log",

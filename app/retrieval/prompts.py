@@ -1,3 +1,3 @@
 INSUFFICIENT_CONTEXT_ANSWER = (
-    "No hay informacion suficiente en los documentos locales para responder."
+    "There is not enough information in the local documents to answer."
 )

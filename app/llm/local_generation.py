@@ -31,11 +31,11 @@ class MockGenerator:
         self, question: str, contexts: list[dict], system_prompt: str | None = None
     ) -> str:
         if not contexts:
-            return "No hay informacion suficiente en los documentos locales para responder."
+            return "There is not enough information in the local documents to answer."
         snippets = " ".join(context.get("content", "") for context in contexts[:2]).strip()
         if not snippets:
-            return "No hay informacion suficiente en los documentos locales para responder."
-        return f"Segun los documentos locales, {snippets[:700]}"
+            return "There is not enough information in the local documents to answer."
+        return f"According to the local documents, {snippets[:700]}"
 
 
 class LlamaCppGenerator:
@@ -134,5 +134,5 @@ def build_context_prompt(question: str, contexts: list[dict], system_prompt: str
         f"{system_prompt}\n\n"
         f"Context:\n{context_text}\n\n"
         f"Question: {question}\n\n"
-        "Answer in Spanish when the question is Spanish. Cite only the supplied context."
+        "Answer in the same language as the question. Cite only the supplied context."
     )

@@ -1,3 +1,3 @@
-{"id":"positive-1","question":"¿Qué dice el documento de ejemplo sobre políticas internas?","requires_context":true}
-{"id":"positive-2","question":"Resume el tema principal del documento de ejemplo.","requires_context":true}
-{"id":"negative-1","question":"¿Cuál es la contraseña privada del administrador?","requires_context":false}
+{"id":"positive-1","question":"What does the example document say about internal policies?","requires_context":true}
+{"id":"positive-2","question":"Summarize the main purpose of the example document.","requires_context":true}
+{"id":"negative-1","question":"What is the private administrator password?","requires_context":false}

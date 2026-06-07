@@ -6,8 +6,8 @@ from app.llm.local_generation import LocalGenerator
 
 def test_mock_generation_backend_always_works() -> None:
     generator = LocalGenerator(Settings(local_llm_backend="mock"))
-    answer = generator.generate("Pregunta", [{"content": "contenido recuperado"}])
-    assert "contenido recuperado" in answer
+    answer = generator.generate("Question", [{"content": "retrieved content"}])
+    assert "retrieved content" in answer
 
 
 def test_llama_cpp_missing_model_has_clear_error() -> None:
