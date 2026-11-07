@@ -20,16 +20,22 @@ class LocalEmbeddings:
             self._model = self._load_sentence_transformer()
 
     def embed_texts(self, texts: Sequence[str]) -> list[list[float]]:
+        """Embed document chunks."""
+        return self._embed(texts, role="passage")
+
+    def embed_query(self, text: str) -> list[float]:
+        """Embed a user question."""
+        return self._embed([text], role="query")[0]
+
+    def _embed(self, texts: Sequence[str], role: str) -> list[list[float]]:
         if self.backend == "mock":
             return [mock_embedding(text, self.dimension) for text in texts]
 
+        inputs = [add_e5_prefix(text, role, self.settings.embedding_model_name) for text in texts]
         embeddings = self._model.encode(
-            list(texts), normalize_embeddings=True, batch_size=32, show_progress_bar=False
+            inputs, normalize_embeddings=True, batch_size=32, show_progress_bar=False
         )
         return [list(map(float, embedding)) for embedding in embeddings]
-
-    def embed_query(self, text: str) -> list[float]:
-        return self.embed_texts([text])[0]
 
     def _model_name(self) -> str:
         if self.backend == "mock":
@@ -62,6 +68,18 @@ class LocalEmbeddings:
             token=self.settings.hf_token or None,
             local_files_only=not self.settings.allow_model_download,
         )
+
+
+def add_e5_prefix(text: str, role: str, model_name: str) -> str:
+    """E5 models are trained with "query: " and "passage: " prefixes and expect them at inference.
+
+    Without them retrieval quality drops (see the intfloat/multilingual-e5 model cards).
+    Other models get the text unchanged.
+    """
+    if "e5" not in model_name.lower():
+        return text
+    prefix = f"{role}: "
+    return text if text.startswith(prefix) else prefix + text
 
 
 def mock_embedding(text: str, dimension: int) -> list[float]:

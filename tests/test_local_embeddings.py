@@ -16,3 +16,18 @@ def test_mock_embeddings_need_no_real_model() -> None:
         embedding_dimension=4,
     )
     assert len(LocalEmbeddings(settings).embed_query("x")) == 4
+
+
+def test_e5_models_get_query_and_passage_prefixes() -> None:
+    from app.llm.local_embeddings import add_e5_prefix
+
+    model = "intfloat/multilingual-e5-small"
+    assert add_e5_prefix("what is X?", "query", model) == "query: what is X?"
+    assert add_e5_prefix("X is a thing.", "passage", model) == "passage: X is a thing."
+    assert add_e5_prefix("query: already", "query", model) == "query: already"
+
+
+def test_other_models_get_text_unchanged() -> None:
+    from app.llm.local_embeddings import add_e5_prefix
+
+    assert add_e5_prefix("what is X?", "query", "BAAI/bge-small-en-v1.5") == "what is X?"

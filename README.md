@@ -1,6 +1,6 @@
 # Local RAG with PostgreSQL and pgvector
 
-Local-first Retrieval-Augmented Generation system for Windows 11. It uses FastAPI, PostgreSQL, pgvector, local document ingestion, hybrid retrieval, local embeddings, optional local generation and source-backed answers.
+Local-first Retrieval-Augmented Generation system. It uses FastAPI, PostgreSQL, pgvector, local document ingestion, hybrid retrieval, local embeddings, optional local generation and source-backed answers.
 
 The default mode is fully mock-based, so the API, ingestion pipeline, database schema and tests can be validated without downloading large models. After models are downloaded, the project can run offline.
 
@@ -40,10 +40,10 @@ Core components:
 
 ## Requirements
 
-- Windows 11
-- Docker Desktop
+- Docker (Docker Desktop on Windows or macOS)
 - Python 3.11+
-- PowerShell
+
+The commands below are written for PowerShell on Windows. On Linux or macOS, use `source .venv/bin/activate` and forward slashes in paths.
 
 ## Quick Start: Mode A, Full Mock
 
@@ -92,7 +92,7 @@ Main settings:
 ```env
 DATABASE_URL=postgresql+psycopg://rag:rag@localhost:5432/ragdb
 RAG_DEFAULT_TENANT_ID=local
-RAG_MIN_VECTOR_SCORE=0.75
+RAG_MIN_VECTOR_SCORE=0.80
 EMBEDDINGS_BACKEND=mock
 EMBEDDING_DIMENSION=384
 LOCAL_LLM_BACKEND=mock
@@ -263,6 +263,8 @@ Single GGUF file:
 python scripts\download_model.py --repo-id MODEL_REPO_ID --filename MODEL_NAME.gguf --target ./models/llm/model.gguf
 ```
 
+Full-repository downloads skip copies of the weights in other formats (ONNX, OpenVINO, TensorFlow, Flax, and `pytorch_model.bin` when `model.safetensors` exists), because sentence-transformers and transformers never load them. For `intfloat/multilingual-e5-small` that is 471 MB instead of 2.2 GB. Add `--all` to download everything.
+
 `models/` is ignored by Git.
 
 ## Tests and Evals
@@ -275,6 +277,11 @@ python -m app.evals.run_evals
 The test suite covers hashing, chunking, RRF, mock embeddings, local backend selection, keyword query construction, context sufficiency and the answer contract.
 
 Basic evals use `app/evals/golden.jsonl`. Positive cases require the database to be migrated and local content to be ingested.
+
+With the example document, the 18 tests and the 3 evals pass in mock mode and with real `multilingual-e5-small` embeddings (Mode B). Two details make the real-embeddings case work:
+
+- **Prefixes.** E5 models expect the prefixes `query: ` and `passage: `, which `LocalEmbeddings` adds for any model whose name contains `e5`.
+- **Threshold.** E5 similarities are compressed: unrelated questions still score about 0.72-0.76. The default `RAG_MIN_VECTOR_SCORE` is therefore 0.80; see [USAGE_GUIDE.md](USAGE_GUIDE.md) before changing models.
 
 ## Data Reset
 

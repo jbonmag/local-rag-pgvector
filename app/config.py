@@ -30,7 +30,7 @@ class Settings(BaseSettings):
 
     data_raw_dir: Path = Path("./data/raw")
     data_processed_dir: Path = Path("./data/processed")
-    rag_min_vector_score: float = 0.75
+    rag_min_vector_score: float = 0.80
 
 
 @lru_cache

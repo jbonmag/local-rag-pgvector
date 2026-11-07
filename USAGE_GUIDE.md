@@ -693,10 +693,17 @@ A tenant is a namespace. The project currently uses `local`, but the schema is d
 ### Vector Threshold
 
 ```env
-RAG_MIN_VECTOR_SCORE=0.75
+RAG_MIN_VECTOR_SCORE=0.80
 ```
 
 This helps prevent weak semantic matches from being treated as enough context.
+
+The right value depends on the embedding model. E5 models give high cosine similarities even to unrelated text. With `intfloat/multilingual-e5-small` and the example document:
+
+- questions about the document scored 0.86-0.87;
+- unrelated questions scored 0.72-0.76: a password, the weather on Mars, a paella recipe.
+
+The old default of 0.75 let some of the unrelated ones through; 0.80 separates them. This was calibrated on a handful of questions, so check it against your own documents and questions, and recalibrate if you change the model.
 
 ### Embeddings
 
