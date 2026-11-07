@@ -10,8 +10,11 @@ def main() -> None:
     parser.add_argument("--repo-id", required=True, help="Hugging Face repository id.")
     parser.add_argument("--target", required=True, help="Local target file or directory.")
     parser.add_argument("--filename", help="Single filename to download, for example a GGUF file.")
-    parser.add_argument("--all", action="store_true",
-                        help="Download every file, including ONNX/OpenVINO/TF copies of the weights.")
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Download every file, including ONNX/OpenVINO/TF copies of the weights.",
+    )
     args = parser.parse_args()
 
     try:
@@ -45,7 +48,8 @@ def main() -> None:
         )
         print(f"Downloaded {args.repo_id} to {target}")
         if ignore:
-            print(f"Skipped alternative weight formats: {', '.join(ignore)} (use --all to keep them)")
+            skipped = ", ".join(ignore)
+            print(f"Skipped alternative weight formats: {skipped} (use --all to keep them)")
 
 
 def redundant_weight_patterns(repo_id: str) -> list[str]:
@@ -57,7 +61,14 @@ def redundant_weight_patterns(repo_id: str) -> list[str]:
     """
     from huggingface_hub import HfApi
 
-    patterns = ["onnx/*", "openvino/*", "*.onnx", "tf_model.h5", "flax_model.msgpack", "rust_model.ot"]
+    patterns = [
+        "onnx/*",
+        "openvino/*",
+        "*.onnx",
+        "tf_model.h5",
+        "flax_model.msgpack",
+        "rust_model.ot",
+    ]
     files = HfApi().list_repo_files(repo_id)
     if any(name.endswith(".safetensors") for name in files):
         patterns += ["pytorch_model*.bin"]

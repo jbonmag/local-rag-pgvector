@@ -171,7 +171,6 @@ The `mock` backend always works and does not require a real model. The other bac
 
 ```text
 .
-|-- AGENTS.md
 |-- README.md
 |-- USAGE_GUIDE.md
 |-- .env.example
@@ -208,11 +207,11 @@ Important folders:
 
 You need:
 
-- Windows 11;
-- Docker Desktop;
+- Docker (Docker Desktop on Windows or macOS);
 - Python 3.11 or newer;
-- PowerShell;
 - internet access only for dependency installation and model downloads.
+
+The commands in this guide are written for PowerShell on Windows. On Linux or macOS, activate the environment with `source .venv/bin/activate` and use forward slashes in paths.
 
 After downloading models, the system can run offline.
 
