@@ -293,3 +293,6 @@ python scripts\reset_db.py --yes-i-know
 
 This removes RAG table data. It does not delete files from `data/raw`.
 
+## License
+
+[MIT](LICENSE).
